@@ -731,6 +731,7 @@ bool_t xdr_string(XDR *xdrs, char **cpp, u_int maxsize)
 	_DIAGASSERT(cpp != NULL);
 
 	sp = *cpp;
+	size = 0;
 
 	/*
 	 * first deal with the length since xdr strings are counted-strings
