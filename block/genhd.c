@@ -602,6 +602,7 @@ void add_disk(struct gendisk *disk)
 	 */
 	disk->major = MAJOR(devt);
 	disk->first_minor = MINOR(devt);
+
 	disk_alloc_events(disk);
 
 	/* Register BDI before referencing it from bdev */ 
@@ -1503,9 +1504,9 @@ static void __disk_unblock_events(struct gendisk *disk, bool check_now)
 	intv = disk_events_poll_jiffies(disk);
 	set_timer_slack(&ev->dwork.timer, intv / 4);
 	if (check_now)
-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
 	else if (intv)
-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
 out_unlock:
 	spin_unlock_irqrestore(&ev->lock, flags);
 }
@@ -1546,7 +1547,7 @@ void disk_check_events(struct gendisk *disk)
 	spin_lock_irqsave(&ev->lock, flags);
 	if (!ev->block) {
 		cancel_delayed_work(&ev->dwork);
-		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
 	}
 	spin_unlock_irqrestore(&ev->lock, flags);
 }
@@ -1584,7 +1585,7 @@ unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask)
 
 	/* uncondtionally schedule event check and wait for it to finish */
 	disk_block_events(disk);
-	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
+	queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, 0);
 	flush_delayed_work(&ev->dwork);
 	__disk_unblock_events(disk, false);
 
@@ -1621,7 +1622,7 @@ static void disk_events_workfn(struct work_struct *work)
 
 	intv = disk_events_poll_jiffies(disk);
 	if (!ev->block && intv)
-		queue_delayed_work(system_nrt_wq, &ev->dwork, intv);
+		queue_delayed_work(system_nrt_freezable_wq, &ev->dwork, intv);
 
 	spin_unlock_irq(&ev->lock);
 
@@ -1781,6 +1782,7 @@ static void disk_alloc_events(struct gendisk *disk)
 	ev->block = 1;
 	ev->poll_msecs = -1;
 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
+
 	disk->ev = ev;
 }
 
