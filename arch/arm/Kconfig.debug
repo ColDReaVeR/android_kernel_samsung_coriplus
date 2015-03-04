@@ -130,7 +130,7 @@ config DEBUG_S3C_UART
 	  by CONFIG_S3C_LOWLEVEL_UART_PORT.
 
 config BCMLOG_DEFAULT_LOGBUF_2M
-       bool " Set 2MB for Logging driver output buffer"
+       bool "Set 2MB for Logging driver output buffer"
        default y
        help
        Say Y here if you want to increate log driver output buffer size
